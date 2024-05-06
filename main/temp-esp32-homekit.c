@@ -162,7 +162,7 @@ static void sensor_thread_entry(void *p)
         .name = "Esp-Temperature-Sensor",
         .manufacturer = "Espressif",
         .model = "EspSensor-T01",
-        .serial_num = "001122334466",
+        .serial_num = CONFIG_EXAMPLE_SERIAL_NUM,
         .fw_rev = "0.9.0",
         .hw_rev = NULL,
         .pv = "1.1.0",

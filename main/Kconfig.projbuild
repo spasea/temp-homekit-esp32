@@ -32,7 +32,7 @@ menu "Example configuration"
         int "SCL GPIO Number"
         default 5 if IDF_TARGET_ESP8266
         default 6 if IDF_TARGET_ESP32C3
-        default 19 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+        default 33 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
         help
             GPIO number for I2C Master clock line.
 
@@ -40,7 +40,7 @@ menu "Example configuration"
         int "SDA GPIO Number"
         default 4 if IDF_TARGET_ESP8266
         default 5 if IDF_TARGET_ESP32C3
-        default 18 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
+        default 32 if IDF_TARGET_ESP32 || IDF_TARGET_ESP32S2 || IDF_TARGET_ESP32S3
         help
             GPIO number for I2C Master data line.
 
@@ -66,4 +66,10 @@ menu "Example configuration"
         depends on EXAMPLE_USE_HARDCODED_SETUP_CODE
         help
             Setup id to be used for HomeKot pairing, if hard-coded setup code is enabled.
+    
+    config EXAMPLE_SERIAL_NUM
+        string "HomeKit Device serial number"
+        default "001122334466"
+        help
+            Setup serial number for device
 endmenu
