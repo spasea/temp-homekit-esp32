@@ -144,121 +144,6 @@ static int sensor_read_h(hap_char_t *hc, hap_status_t *status_code, void *serv_p
     return HAP_FAIL;
 }
 
-/** Buffers to hold data/tlv8 values. The HomeKit core does not maintain a copy of
- * the values. It will just keep the pointers.
- */
-uint8_t mydata[128];
-uint8_t mytlv8[128];
-
-/** Custom UUIDs for the custom service and characteristics */
-#define APP_CUSTOM_SERV_UUID        "8517ab60-73bd-11e8-adc0-fa7ae01bbebc"
-#define APP_CUSTOM_CHAR_DATA_UUID   "8517ade0-73bd-11e8-adc0-fa7ae01bbebc"
-#define APP_CUSTOM_CHAR_TLV8_UUID   "8517af8e-73bd-11e8-adc0-fa7ae01bbebc"
-
-static void hex_dbg_print(char *name, unsigned char *buf, int buf_len)
-{
-	int i;
-	printf("%s: ", name);
-	for (i = 0; i < buf_len; i++) {
-		if (i % 16 == 0)
-			printf("\r\n");
-		printf("%02x ", buf[i]);
-	}
-	printf("\r\n");
-}
-
-/* Read routine for the custom data/tlv8 characteristics */
-static int custom_serv_read(hap_char_t *hc, hap_status_t *status, void *serv_priv, void *read_priv)
-{
-    int ret = HAP_SUCCESS;
-    if (!strcmp(hap_char_get_type_uuid(hc), APP_CUSTOM_CHAR_DATA_UUID)) {
-        const hap_val_t *cur_val = hap_char_get_val(hc);
-        hap_data_val_t data;
-        /* Changing the first byte of existing data, just to demonstrate a value change on read */
-        mydata[0] = 0xaa;
-        data.buf = mydata;
-        data.buflen = cur_val->d.buflen;
-        hap_val_t new_val = {
-            .d = data,
-        };
-        hex_dbg_print("Read data", data.buf, data.buflen);
-        hap_char_update_val(hc, &new_val);
-        *status = HAP_STATUS_SUCCESS;
-    } else if (!strcmp(hap_char_get_type_uuid(hc), APP_CUSTOM_CHAR_TLV8_UUID)) {
-        const hap_val_t *cur_val = hap_char_get_val(hc);
-        hap_tlv8_val_t tlv8;
-        /* Changing the last byte (if applicable) of existing tlv8, just to demonstrate a value change on read */
-        if (cur_val->t.buflen) {
-            mytlv8[cur_val->t.buflen - 1] = 0xcc;
-        }
-        tlv8.buf = mytlv8;
-        tlv8.buflen = cur_val->t.buflen;
-        hap_val_t new_val = {
-            .t = tlv8,
-        };
-        hex_dbg_print("Read tlv8", tlv8.buf, tlv8.buflen);
-        hap_char_update_val(hc, &new_val);
-        *status = HAP_STATUS_SUCCESS;
-    } else {
-        *status = HAP_STATUS_RES_ABSENT;
-        ret = HAP_FAIL;
-    }
-    return ret;
-}
-
-/* Write routine for the custom data/tlv8 characteristics */
-static int custom_serv_write(hap_write_data_t write_data[], int count,
-        void *serv_priv, void *write_priv)
-{
-    int i, ret = HAP_SUCCESS;
-    hap_write_data_t *write;
-    for (i = 0; i < count; i++) {
-        write = &write_data[i];
-        if (!strcmp(hap_char_get_type_uuid(write->hc), APP_CUSTOM_CHAR_DATA_UUID)) {
-            hex_dbg_print("Write data", write->val.d.buf, write->val.d.buflen);
-            /* Copy the received value to mydata and update */
-            memcpy(mydata, write->val.d.buf, write->val.d.buflen);
-            hap_val_t val;
-            val.d.buf = mydata;
-            val.d.buflen = write->val.d.buflen;
-            hap_char_update_val(write->hc, &val);
-        } else if (!strcmp(hap_char_get_type_uuid(write->hc), APP_CUSTOM_CHAR_TLV8_UUID)) {
-            hex_dbg_print("Write tlv8", write->val.t.buf, write->val.t.buflen);
-            /* Copy the received value to mytlv8 and update */
-            memcpy(mytlv8, write->val.t.buf, write->val.t.buflen); 
-            hap_val_t val;
-            val.t.buf = mytlv8;
-            val.t.buflen = write->val.t.buflen;
-            hap_char_update_val(write->hc, &val);
-        } else {
-            *(write->status) = HAP_STATUS_RES_ABSENT;
-            ret = HAP_FAIL;
-        }
-    }
-    return ret;
-}
-/* Create a custom service with data/tlv8 characteristics */
-hap_serv_t *custom_data_tlv8_serv_create()
-{
-    hap_serv_t *hs = hap_serv_create(APP_CUSTOM_SERV_UUID);
-    /* Initialising the characteristic with some dummy data */
-    uint8_t tmp[] = {0x0a, 0x0b, 0x0c, 0x0d};
-    hap_data_val_t d;
-    memcpy(mydata, tmp, sizeof(tmp));
-    d.buf = mydata;
-    d.buflen = sizeof(tmp);
-    hap_char_t *data = hap_char_data_create(APP_CUSTOM_CHAR_DATA_UUID, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW, &d);
-    hap_serv_add_char(hs, data);
-
-    /* Initialising characteristic with NULL TLV8 */
-    hap_char_t *tlv8 = hap_char_tlv8_create(APP_CUSTOM_CHAR_TLV8_UUID, HAP_CHAR_PERM_PR | HAP_CHAR_PERM_PW, NULL);
-    hap_serv_add_char(hs, tlv8);
-
-    hap_serv_set_read_cb(hs, custom_serv_read);
-    hap_serv_set_write_cb(hs, custom_serv_write);
-    return hs;
-}
-
 /*The main thread for handling the Sensor Accessory */
 static void sensor_thread_entry(void *p)
 {
@@ -277,7 +162,7 @@ static void sensor_thread_entry(void *p)
         .name = "Esp-Temperature-Sensor",
         .manufacturer = "Espressif",
         .model = "EspSensor-T01",
-        .serial_num = "001122334455",
+        .serial_num = "001122334466",
         .fw_rev = "0.9.0",
         .hw_rev = NULL,
         .pv = "1.1.0",
@@ -312,9 +197,6 @@ static void sensor_thread_entry(void *p)
     hap_serv_set_read_cb(service, sensor_read_h);
 
     /* Add the Sensor Service to the Accessory Object */
-    hap_acc_add_serv(accessory, service);
-
-    service = custom_data_tlv8_serv_create();
     hap_acc_add_serv(accessory, service);
 
     /* Add the Accessory to the HomeKit Database */
