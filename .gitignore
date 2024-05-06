@@ -1,0 +1,16 @@
+sdkconfig
+sdkconfig.old
+build
+components
+
+# vscode
+.vscode
+
+# MacOS directory files
+.DS_Store
+
+# Managed components
+managed_components/*
+
+# Dependency lock files
+dependencies.lock
