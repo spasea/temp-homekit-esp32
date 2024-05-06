@@ -1,7 +1,6 @@
 sdkconfig
 sdkconfig.old
 build
-components
 
 # vscode
 .vscode
